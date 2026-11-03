@@ -3,7 +3,7 @@
 **A Power BI report that restates a global pharma company's sales into any currency, using the right exchange rate for every scenario, and shows how actuals really compare with budget.**
 
 <p align="center">
-  <img src="images/dashboard.png" alt="FX Variance Cockpit: single-page Power BI report" width="900">
+  <img src="images/dashboard.PNG" alt="FX Variance Cockpit: single-page Power BI report" width="900">
 </p>
 
 > Started as a Power BI assessment. I then rebuilt and extended it: fixed a currency gap, a misleading variance and an inconsistent number format. The story of those fixes is [below](#bugs-i-found-in-my-own-first-version).
@@ -43,6 +43,8 @@ erDiagram
     Dim_Scenario ||--o{ Fact_Sales : "Scenario"
     Fact_Sales   }o..o{ Global_FX_Rates : "LOOKUPVALUE (4 keys, no relationship)"
 ```
+
+![Model view in Power BI](images/model.PNG)
 
 `Dim_Scenario` carries the rate type for each scenario. `Dim_Currency`, `Format Slicer` and `Decimals` are disconnected tables that only feed slicers. The FX table is looked up with `LOOKUPVALUE` because the match needs four keys at once: from-currency, to-currency, fiscal period and rate type.
 
