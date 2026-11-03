@@ -1,0 +1,2 @@
+-- Calculated table: decimal-places selector (disconnected slicer table)
+Decimals = UNION(ROW("Decimals", 0), ROW("Decimals", 1), ROW("Decimals", 2))

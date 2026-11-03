@@ -1,0 +1,149 @@
+/* =====================================================================
+   FX Variance Cockpit: all measures
+   Home table: Fact_Sales
+   ===================================================================== */
+
+
+/* ---------- 1. Currency conversion (the core) ----------------------- */
+
+-- Converts every sales row into the selected reporting currency.
+-- Rate type comes from the scenario (Actuals = Monthly, Budget = Budget,
+-- forecasts = Hyper Inflation). If no direct rate exists, go via USD.
+-- A missing rate gives BLANK on purpose (never a made-up 0).
+Sales Reporting Currency =
+VAR ToCurr = SELECTEDVALUE('Dim_Currency'[Currency], "USD")
+RETURN
+SUMX(
+    'Fact_Sales',
+    VAR FiscalKey = RELATED('Dim_Date'[FiscalPeriodKey])
+    VAR RateType  = RELATED('Dim_Scenario'[Rate Type])
+    VAR FromCurr  = 'Fact_Sales'[FromCurrency]
+
+    -- 1) the direct rate, if the table has one
+    VAR DirectRate =
+        LOOKUPVALUE(
+            'Global FX Rates'[Overall FX Rate],
+            'Global FX Rates'[From Currency], FromCurr,
+            'Global FX Rates'[To Currency], ToCurr,
+            'Global FX Rates'[Fiscal Year/Period], FiscalKey,
+            'Global FX Rates'[Rate Type], RateType
+        )
+
+    -- 2) otherwise go via USD: From -> USD, then USD -> To
+    VAR LegToUSD =
+        IF(FromCurr = "USD", 1,
+            LOOKUPVALUE(
+                'Global FX Rates'[Overall FX Rate],
+                'Global FX Rates'[From Currency], FromCurr,
+                'Global FX Rates'[To Currency], "USD",
+                'Global FX Rates'[Fiscal Year/Period], FiscalKey,
+                'Global FX Rates'[Rate Type], RateType
+            )
+        )
+    VAR LegFromUSD =
+        IF(ToCurr = "USD", 1,
+            LOOKUPVALUE(
+                'Global FX Rates'[Overall FX Rate],
+                'Global FX Rates'[From Currency], "USD",
+                'Global FX Rates'[To Currency], ToCurr,
+                'Global FX Rates'[Fiscal Year/Period], FiscalKey,
+                'Global FX Rates'[Rate Type], RateType
+            )
+        )
+
+    VAR Rate = COALESCE(DirectRate, LegToUSD * LegFromUSD)
+
+    RETURN 'Fact_Sales'[Net Sales Local] * Rate
+)
+
+
+/* ---------- 2. Display units and number format ---------------------- */
+
+-- Scales the converted value by the Unit slicer.
+-- Dynamic format string on this measure:  [Currency Format String]
+Value Adjusted =
+VAR SelectedFormat = SELECTEDVALUE('Format Slicer'[Unit], "Absolute")
+VAR RawValue = [Sales Reporting Currency]
+RETURN
+SWITCH(SelectedFormat,
+    "Thousands", RawValue / 1000,
+    "Millions",  RawValue / 1000000,
+    RawValue
+)
+
+-- One format string shared by every money measure: symbol + decimals + K/M.
+-- Used as the dynamic format string of Value Adjusted, Actual Sales Card,
+-- Budget Sales Card, Sales Variance, Scenario Table Value.
+Currency Format String =
+VAR _Sym    = SELECTEDVALUE('Dim_Currency'[Symbol], "$")
+VAR _Unit   = SELECTEDVALUE('Format Slicer'[Unit], "Absolute")
+VAR _Dec    = SELECTEDVALUE('Decimals'[Decimals], 1)
+VAR _Number = IF(_Dec = 0, "#,##0", "#,##0." & REPT("0", _Dec))
+VAR _Suffix = SWITCH(_Unit, "Thousands", """K""", "Millions", """M""", "")
+RETURN
+    """" & _Sym & """ " & _Number & _Suffix
+
+
+/* ---------- 3. Actual vs Budget (like-for-like) --------------------- */
+
+Actual Sales Card =
+CALCULATE([Value Adjusted], 'Dim_Scenario'[Scenario] = "Actuals")
+
+-- Budget only for the dates that have Actuals in the current selection,
+-- so a half-year of actuals is never compared with a full year of budget.
+Budget Sales Card =
+VAR ActualDates =
+    CALCULATETABLE(
+        VALUES('Fact_Sales'[Calendar Date]),
+        'Fact_Sales'[Scenario] = "Actuals",
+        ALL('Dim_Scenario'[Scenario])
+    )
+RETURN
+    CALCULATE(
+        [Value Adjusted],
+        'Dim_Scenario'[Scenario] = "Budget",
+        ALL('Dim_Scenario'[Scenario]),
+        TREATAS(ActualDates, 'Dim_Date'[Date])
+    )
+
+Sales Variance = [Actual Sales Card] - [Budget Sales Card]
+
+-- format string: 0.00%;-0.00%;0.00%
+Var % = DIVIDE([Actual Sales Card] - [Budget Sales Card], [Budget Sales Card])
+
+
+/* ---------- 4. Scenario comparison table (pick up to 3) ------------- */
+
+Scenarios Selected = COUNTROWS(ALLSELECTED(Dim_Scenario[Scenario]))
+
+-- Dynamic format string:  [Currency Format String]
+Scenario Table Value =
+IF([Scenarios Selected] > 3, BLANK(), [Value Adjusted])
+
+
+/* ---------- 5. Card text with friendly empty states ----------------- */
+
+Actual Sales Text =
+IF(ISBLANK([Actual Sales Card]), "No actuals",
+    FORMAT([Actual Sales Card], [Currency Format String]))
+
+Budget Sales Text =
+IF(ISBLANK([Budget Sales Card]), "—",
+    FORMAT([Budget Sales Card], [Currency Format String]))
+
+Var % Text =
+IF(ISBLANK([Var %]), "—", FORMAT([Var %], "+0.00%;-0.00%;0.00%"))
+
+Sales Variance Text =
+IF(ISBLANK([Sales Variance]), "—",
+    FORMAT([Sales Variance], [Currency Format String]))
+
+
+/* ---------- 6. Title ------------------------------------------------ */
+
+Report Header =
+VAR _Mkt    = SELECTEDVALUE('Dim_Market'[Market], "Global")
+VAR _Curr   = SELECTEDVALUE('Dim_Currency'[Currency], "USD")
+VAR _Period = SELECTEDVALUE('Dim_Date'[Month Display], "Selected FY26")
+RETURN
+    _Mkt & " | " & _Curr & " Performance | " & _Period

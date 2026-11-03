@@ -1,0 +1,65 @@
+{
+  "name": "FX Variance Cockpit",
+  "dataColors": [
+    "#0B3C5D",
+    "#B85C00",
+    "#8A97A8",
+    "#F2A65A",
+    "#E07A1F",
+    "#2E8B57",
+    "#C0392B",
+    "#5B7DB1"
+  ],
+  "background": "#FFFFFF",
+  "foreground": "#1B2733",
+  "tableAccent": "#0B3C5D",
+  "good": "#2E8B57",
+  "neutral": "#E0A800",
+  "bad": "#C0392B",
+  "maximum": "#0B3C5D",
+  "center": "#DCE3EC",
+  "minimum": "#F4F6F9",
+  "textClasses": {
+    "callout": { "fontSize": 28, "fontFace": "Segoe UI Semibold", "color": "#0B3C5D" },
+    "title": { "fontSize": 12, "fontFace": "Segoe UI Semibold", "color": "#1B2733" },
+    "header": { "fontSize": 11, "fontFace": "Segoe UI Semibold", "color": "#1B2733" },
+    "label": { "fontSize": 10, "fontFace": "Segoe UI", "color": "#5A6877" }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "*": [
+          { "fontFamily": "Segoe UI", "fontSize": 10 }
+        ],
+        "title": [
+          {
+            "show": true,
+            "fontFamily": "Segoe UI Semibold",
+            "fontSize": 12,
+            "fontColor": { "solid": { "color": "#1B2733" } },
+            "alignment": "left"
+          }
+        ],
+        "background": [
+          { "show": true, "color": { "solid": { "color": "#FFFFFF" } }, "transparency": 0 }
+        ],
+        "border": [
+          { "show": true, "color": { "solid": { "color": "#E1E6EC" } }, "radius": 8 }
+        ],
+        "dropShadow": [
+          { "show": false }
+        ]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [
+          { "color": { "solid": { "color": "#F3F5F8" } }, "transparency": 0 }
+        ],
+        "outspace": [
+          { "color": { "solid": { "color": "#F3F5F8" } }, "transparency": 0 }
+        ]
+      }
+    }
+  }
+}
