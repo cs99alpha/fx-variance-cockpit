@@ -6,8 +6,6 @@
   <img src="images/dashboard.PNG" alt="FX Variance Cockpit: single-page Power BI report" width="900">
 </p>
 
-> Started as a Power BI assessment. I then rebuilt and extended it: fixed a currency gap, a misleading variance and an inconsistent number format. The story of those fixes is [below](#bugs-i-found-in-my-own-first-version).
-
 ---
 
 ## Why this is harder than it looks
@@ -76,13 +74,13 @@ Find the dates that have Actuals, then total Budget for those dates only.
 
 A single `Currency Format String` measure builds the symbol, decimals and K/M suffix, and is used as the dynamic format string of every money measure. Change the Unit or Decimals slicer and the cards, the matrix and the chart labels stay in agreement.
 
-## Bugs I found in my own first version
+## Edge cases the model handles
 
-1. **GBP showed an empty report.** The slicer offered GBP, but the rate table only holds GBP rates *from USD*, so every EUR and CHF row had no rate. The measure now triangulates through USD. I checked first that the table's own EUR → CHF rates equal EUR → USD × USD → CHF in all 36 cases, so this follows the data's own method.
-2. **A variance of -39%.** Five months of Actuals were being compared with eight months of Budget. The real, like-for-like variance was -3.2%.
-3. **Three formats that disagreed.** The cards and the matrix each had their own copy-pasted format formula (1 decimal vs 2, with and without units). They now share one.
-4. **A misleading dimension.** `Dim_Market` kept one arbitrary currency per market, which is wrong for markets that trade in several. Removed.
-5. **A wrong currency symbol.** CHF was shown with the old French franc sign. Fixed.
+1. **No direct rate for some pairs.** The rate table holds GBP only as a target from USD, so EUR → GBP and CHF → GBP have no row. The measure converts through USD. The table's own EUR → CHF rates match EUR → USD × USD → CHF (within rounding) in all 36 period and rate-type combinations, so this follows the data's own method.
+2. **Actuals cover 6 months, Budget covers 12.** Comparing them directly shows a variance near -39%. The Budget card counts only the months that have Actuals, which gives the like-for-like figure.
+3. **One format everywhere.** Cards, matrix and chart labels share one format string, so symbol, decimals and K / M units always agree.
+4. **A market can trade in several currencies.** Africa, Hong Kong, Russia and Turkey each have more than one. Currency therefore lives on the sales row, not on a market dimension.
+5. **Swiss franc symbol.** Shown as `CHF`, not the obsolete `₣`.
 
 ## Repository guide
 
@@ -107,7 +105,7 @@ images/                   screenshots
 
 ## Data note
 
-The sales and FX data come from an assessment dataset and are not included in this repository. The expected columns are:
+The sales and FX data files are not included in this repository. The expected columns are:
 
 - **Sales:** Scenario, Market, FromCurrency, Net Sales Local, Calendar Date, Product
 - **FX rates:** Overall FX Rate, From Currency, To Currency, Fiscal Year/Period, Rate Type
