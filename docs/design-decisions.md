@@ -53,7 +53,7 @@ The match needs four keys together (from-currency, to-currency, fiscal period, r
 The rate table is at fiscal-period grain, not day grain. A key that matches its format is the simplest join.
 
 **What happens when a rate is missing?**
-The measure returns BLANK for those rows. With GBP, EUR and CHF rows had no direct rate, so I added triangulation through USD after confirming the table's own rates are built that way.
+The measure returns BLANK for those rows. With GBP as the reporting currency, EUR and CHF rows have no direct rate, so the measure converts through USD. The table's own rates are built that way (checked in all 36 combinations for EUR → CHF).
 
 **Why is the Budget card smaller than the full-year budget?**
 It is like-for-like: only months that have Actuals. Otherwise variance compares different periods.
@@ -67,5 +67,5 @@ Inside a matrix cell each column is already filtered to one scenario. `ALLSELECT
 **What would you do differently with more time?**
 Add an FX-versus-performance split of the variance, move to a Power BI Project (`.pbip`) so that every change is visible in Git, and add automated model checks in GitHub Actions.
 
-**What did you get wrong the first time?**
-See "Bugs I found in my own first version" in the README. GBP returned an empty report, the variance compared unequal periods, and three formats disagreed.
+**What edge cases did the data force?**
+See "Edge cases the model handles" in the README: pairs with no direct rate (GBP), Actuals covering six months against twelve of Budget, one format across all visuals, and markets that trade in several currencies.
